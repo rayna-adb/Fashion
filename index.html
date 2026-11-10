@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rayna Fashion - Laporan Penjualan</title>
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="manifest" href="manifest.json">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -64,6 +66,9 @@
                 </span>
                 <button id="btnPengaturan" onclick="bukaPengaturan()" class="hidden bg-indigo-700 hover:bg-indigo-800 text-white text-sm px-3 py-1.5 rounded-lg transition shadow-sm font-medium">
                     ⚙️ Pengaturan
+                </button>
+                <button id="btnInstallPwa" onclick="installPwa()" class="hidden bg-amber-500 hover:bg-amber-600 text-white text-sm px-3 py-1.5 rounded-lg transition shadow-sm font-medium">
+                    📲 Install App
                 </button>
                 <button onclick="muatDariSpreadsheet()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-3 py-1.5 rounded-lg transition shadow-sm font-medium">
                     🔄 Muat Data
@@ -712,6 +717,31 @@
                     console.error(err);
                     alert('Terjadi kesalahan saat mengambil data dari Spreadsheet. Pastikan URL sudah benar dan dideploy sebagai "Anyone".');
                 });
+        }
+
+        // --- PWA Service Worker & Install Prompt ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .catch(err => console.error('SW gagal:', err));
+            });
+        }
+
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const btnInstall = document.getElementById('btnInstallPwa');
+            if (btnInstall) btnInstall.classList.remove('hidden');
+        });
+
+        function installPwa() {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(() => {
+                deferredPrompt = null;
+                document.getElementById('btnInstallPwa').classList.add('hidden');
+            });
         }
     </script>
 </body>
