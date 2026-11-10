@@ -598,15 +598,30 @@
         }
 
         function salinLaporanChat() {
-            let totalS = 0, totalM = 0, totalMod = 0, totalSim = 0;
+            let totalS = 0, totalM = 0, totalMod = 0, totalSim = 0, totalPeng = 0;
             let totalModSudah = 0, totalModBelum = 0;
             let daftarOrder = [];
+            let rincianHarian = [];
+
+            let maxSales = -1, minSales = Infinity;
+            let tglMax = '-', tglMin = '-';
 
             dataPenjualan.forEach(item => {
                 totalS += item.sales;
                 totalM += item.margin;
                 totalMod += item.modalDiputar;
                 totalSim += item.marginDisimpan;
+                totalPeng += (item.pengeluaran || 0);
+
+                if (item.sales > maxSales) {
+                    maxSales = item.sales;
+                    tglMax = item.tanggal;
+                }
+                if (item.sales < minSales) {
+                    minSales = item.sales;
+                    tglMin = item.tanggal;
+                }
+
                 if (item.modalSudahDiputar) {
                     totalModSudah += item.modalDiputar;
                 } else {
@@ -615,12 +630,27 @@
                 if (item.barangOrder) {
                     daftarOrder.push(`• [${item.tanggal}] ${item.barangOrder}`);
                 }
+
+                let statusMod = item.modalSudahDiputar ? '✅ Sudah' : '⏳ Belum';
+                let baris = `• *${item.tanggal}*: Sales ${formatRupiah(item.sales)} | Margin ${formatRupiah(item.margin)} | Modal ${formatRupiah(item.modalDiputar)} (${statusMod})`;
+                if (item.pengeluaran > 0) {
+                    baris += ` | Keluar: ${formatRupiah(item.pengeluaran)}`;
+                }
+                if (item.barangOrder) {
+                    baris += ` | Order: ${item.barangOrder}`;
+                }
+                rincianHarian.push(baris);
             });
+
+            const jumlahHari = dataPenjualan.length;
+            const rataSales = jumlahHari > 0 ? totalS / jumlahHari : 0;
+            const marginBersih = totalM - totalPeng;
+            const persenModalPutar = totalMod > 0 ? ((totalModSudah / totalMod) * 100).toFixed(1) : 0;
 
             let teks = `📊 *LAPORAN PENJUALAN RAYNA FASHION*\n`;
             teks += `📍 _Jl. Mince Suan, Kuala Kurun, Gunung Mas, Kalteng_\n`;
             teks += `----------------------------------------\n`;
-            teks += `📅 Total Hari Tercatat: ${dataPenjualan.length} Hari\n\n`;
+            teks += `📅 Total Hari Tercatat: ${jumlahHari} Hari\n\n`;
             teks += `💰 *TOTAL KESELURUHAN:*\n`;
             teks += `• Total Sales: ${formatRupiah(totalS)}\n`;
             teks += `• Total Margin: ${formatRupiah(totalM)}\n`;
@@ -628,6 +658,22 @@
             teks += `  - Sudah Diputar: ${formatRupiah(totalModSudah)}\n`;
             teks += `  - Belum Diputar: ${formatRupiah(totalModBelum)}\n`;
             teks += `• Margin Harus Disimpan: ${formatRupiah(totalSim)}\n`;
+            teks += `• Total Pengeluaran: ${formatRupiah(totalPeng)}\n`;
+
+            if (jumlahHari > 0) {
+                teks += `\n📈 *ANALISIS SINGKAT:*\n`;
+                teks += `• Rata-rata Sales/Hari: ${formatRupiah(rataSales)}\n`;
+                teks += `• Sales Tertinggi: ${formatRupiah(maxSales)} (${tglMax})\n`;
+                teks += `• Sales Terendah: ${formatRupiah(minSales)} (${tglMin})\n`;
+                teks += `• Margin Bersih (stlh pengeluaran): ${formatRupiah(marginBersih)}\n`;
+                teks += `• Progres Putar Modal: ${persenModalPutar}%\n`;
+            }
+
+            if (rincianHarian.length > 0) {
+                teks += `\n🗓️ *RINCIAN DATA PER HARI:*\n`;
+                teks += rincianHarian.join('\n') + '\n';
+            }
+
             if (daftarOrder.length > 0) {
                 teks += `\n📦 *BARANG PERLU ORDER / STOK MENIPIS:*\n`;
                 teks += daftarOrder.join('\n') + '\n';
@@ -642,7 +688,7 @@
             teks += `_Dibuat otomatis via Aplikasi Rayna Fashion_`;
 
             navigator.clipboard.writeText(teks).then(() => {
-                alert('Laporan ringkas berhasil disalin! Silakan tempel (Paste) di WhatsApp/Chat.');
+                alert('Laporan lengkap beserta rincian & analisis berhasil disalin! Silakan tempel (Paste) di WhatsApp/Chat.');
             });
         }
 
