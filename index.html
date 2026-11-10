@@ -9,22 +9,65 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between font-sans">
 
+    <!-- Layar Pilihan Akun Awal -->
+    <div id="layarPilihAkun" class="fixed inset-0 bg-slate-900 bg-opacity-90 flex justify-center items-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl text-center">
+            <div>
+                <div class="text-4xl mb-2">👕</div>
+                <h2 class="text-2xl font-bold text-slate-800">Laporan Penjualan Toko</h2>
+                <p class="text-sm text-slate-500 mt-1">Silakan pilih akun untuk masuk</p>
+            </div>
+
+            <div id="pilihanTombolAkun" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button onclick="masukSebagaiToko()" class="p-5 rounded-xl border-2 border-slate-200 hover:border-indigo-500 hover:bg-indigo-50 transition flex flex-col items-center gap-2 group">
+                    <span class="text-3xl">🏪</span>
+                    <span class="font-bold text-lg text-slate-700 group-hover:text-indigo-700">Toko</span>
+                    <span class="text-xs text-slate-400">Input Sales Harian</span>
+                </button>
+                <button onclick="tampilkanFormPin()" class="p-5 rounded-xl border-2 border-slate-200 hover:border-emerald-500 hover:bg-emerald-50 transition flex flex-col items-center gap-2 group">
+                    <span class="text-3xl">👑</span>
+                    <span class="font-bold text-lg text-slate-700 group-hover:text-emerald-700">Rayna</span>
+                    <span class="text-xs text-slate-400">Admin (Akses Penuh)</span>
+                </button>
+            </div>
+
+            <!-- Form PIN untuk Rayna -->
+            <div id="formPinRayna" class="hidden space-y-4 text-left pt-2 border-t border-slate-100">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Masukkan PIN Rayna</label>
+                    <input type="password" id="inputPinMasuk" placeholder="Default: 1234" onkeydown="if(event.key==='Enter') verifikasiPinRayna()" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-center text-lg tracking-widest">
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="kembaliKePilihan()" class="w-1/3 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-medium transition">Kembali</button>
+                    <button onclick="verifikasiPinRayna()" class="w-2/3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition">Masuk</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Header / Navbar -->
     <header class="bg-indigo-600 text-white shadow-md">
         <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-            <h1 class="text-xl font-bold tracking-wide flex items-center gap-2">
-                👕 Laporan Penjualan Toko Pakaian
-            </h1>
+            <div class="flex items-center gap-3">
+                <h1 class="text-xl font-bold tracking-wide flex items-center gap-2">
+                    👕 Laporan Penjualan Toko Pakaian
+                </h1>
+            </div>
             <div class="flex items-center gap-2 flex-wrap justify-center">
-                <!-- Status Koneksi Spreadsheet -->
-                <span id="syncStatus" class="text-xs bg-amber-500 text-white px-3 py-1.5 rounded-full font-medium shadow-sm">
-                    Mode Lokal (Belum Terhubung)
+                <span id="badgeAkunAktif" class="text-xs bg-indigo-800 text-white px-3 py-1.5 rounded-full font-semibold shadow-sm">
+                    Akun: -
                 </span>
-                <button onclick="bukaPengaturan()" class="bg-indigo-700 hover:bg-indigo-800 text-white text-sm px-3 py-1.5 rounded-lg transition shadow-sm font-medium">
-                    ⚙️ Pengaturan Spreadsheet
+                <span id="syncStatus" class="text-xs bg-amber-500 text-white px-3 py-1.5 rounded-full font-medium shadow-sm">
+                    Mode Lokal
+                </span>
+                <button id="btnPengaturan" onclick="bukaPengaturan()" class="hidden bg-indigo-700 hover:bg-indigo-800 text-white text-sm px-3 py-1.5 rounded-lg transition shadow-sm font-medium">
+                    ⚙️ Pengaturan
                 </button>
                 <button onclick="muatDariSpreadsheet()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-3 py-1.5 rounded-lg transition shadow-sm font-medium">
-                    🔄 Muat dari Spreadsheet
+                    🔄 Muat Data
+                </button>
+                <button onclick="gantiAkun()" class="bg-slate-700 hover:bg-slate-800 text-white text-sm px-3 py-1.5 rounded-lg transition shadow-sm font-medium">
+                    🚪 Ganti Akun
                 </button>
             </div>
         </div>
@@ -47,8 +90,11 @@
                         <input type="number" id="sales" required placeholder="Contoh: 1500000" oninput="hitungOtomatis()" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-600 mb-1">Persentase Margin (%)</label>
-                        <input type="number" step="0.1" id="persenMargin" required placeholder="Contoh: 25" oninput="hitungOtomatis()" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-sm font-medium text-slate-600">Persentase Margin (%)</label>
+                            <span id="labelKunciMargin" class="text-[11px] text-amber-600 font-medium">🔒 Dikunci oleh Rayna</span>
+                        </div>
+                        <input type="number" step="0.1" id="persenMargin" required oninput="ubahMarginDefault()" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm disabled:bg-slate-100 disabled:text-slate-500">
                     </div>
                     <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
                         <div>
@@ -141,7 +187,7 @@
                                 <th class="p-3">Simpan</th>
                                 <th class="p-3">Pengeluaran</th>
                                 <th class="p-3">Catatan</th>
-                                <th class="p-3 text-center">Aksi</th>
+                                <th id="kolomAksiHeader" class="p-3 text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="tabelData" class="divide-y divide-slate-100 text-slate-700">
@@ -155,18 +201,21 @@
 
     </main>
 
-    <!-- Modal Pengaturan Spreadsheet -->
+    <!-- Modal Pengaturan Spreadsheet & PIN (Khusus Rayna) -->
     <div id="modalPengaturan" class="fixed inset-0 bg-black bg-opacity-50 hidden justify-center items-center p-4 z-50">
         <div class="bg-white rounded-xl max-w-md w-full p-6 space-y-4 shadow-xl">
-            <h3 class="text-lg font-bold text-slate-800">Pengaturan Google Spreadsheet</h3>
-            <p class="text-xs text-slate-500">Masukkan URL Web App Google Apps Script Anda agar data tersinkron otomatis ke Spreadsheet.</p>
+            <h3 class="text-lg font-bold text-slate-800">Pengaturan Admin (Rayna)</h3>
             <div>
                 <label class="block text-sm font-medium text-slate-600 mb-1">URL Web App (Apps Script)</label>
                 <input type="text" id="inputScriptUrl" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
             </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-600 mb-1">Ubah PIN Rayna</label>
+                <input type="password" id="inputPinBaru" placeholder="Kosongkan jika tidak ingin ubah" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+            </div>
             <div class="flex justify-end gap-2 pt-2">
                 <button onclick="tutupPengaturan()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-medium transition">Batal</button>
-                <button onclick="simpanPengaturan()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition">Simpan URL</button>
+                <button onclick="simpanPengaturan()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition">Simpan</button>
             </div>
         </div>
     </div>
@@ -180,9 +229,13 @@
     <script>
         let dataPenjualan = JSON.parse(localStorage.getItem('data_penjualan_toko')) || [];
         let scriptUrl = localStorage.getItem('script_url_toko') || '';
+        let pinRayna = localStorage.getItem('pin_rayna_toko') || '1234';
+        let defaultMargin = localStorage.getItem('default_margin_toko') || '25';
+        let akunAktif = null; // 'toko' atau 'rayna'
 
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('tanggal').valueAsDate = new Date();
+            document.getElementById('persenMargin').value = defaultMargin;
             if (scriptUrl) {
                 document.getElementById('inputScriptUrl').value = scriptUrl;
                 updateStatusKoneksi(true);
@@ -190,8 +243,85 @@
             renderTabel();
         });
 
+        // --- Sistem Pilihan Akun ---
+        function masukSebagaiToko() {
+            akunAktif = 'toko';
+            terapkanHakAkses();
+            document.getElementById('layarPilihAkun').classList.add('hidden');
+        }
+
+        function tampilkanFormPin() {
+            document.getElementById('pilihanTombolAkun').classList.add('hidden');
+            document.getElementById('formPinRayna').classList.remove('hidden');
+            document.getElementById('inputPinMasuk').value = '';
+            document.getElementById('inputPinMasuk').focus();
+        }
+
+        function kembaliKePilihan() {
+            document.getElementById('formPinRayna').classList.add('hidden');
+            document.getElementById('pilihanTombolAkun').classList.remove('hidden');
+        }
+
+        function verifikasiPinRayna() {
+            const input = document.getElementById('inputPinMasuk').value;
+            if (input === pinRayna) {
+                akunAktif = 'rayna';
+                terapkanHakAkses();
+                document.getElementById('layarPilihAkun').classList.add('hidden');
+                kembaliKePilihan();
+            } else {
+                alert('PIN salah! Silakan coba lagi.');
+                document.getElementById('inputPinMasuk').value = '';
+                document.getElementById('inputPinMasuk').focus();
+            }
+        }
+
+        function gantiAkun() {
+            akunAktif = null;
+            kembaliKePilihan();
+            document.getElementById('layarPilihAkun').classList.remove('hidden');
+        }
+
+        function terapkanHakAkses() {
+            const isRayna = akunAktif === 'rayna';
+            const badge = document.getElementById('badgeAkunAktif');
+            const inputMargin = document.getElementById('persenMargin');
+            const labelKunci = document.getElementById('labelKunciMargin');
+            const btnPengaturan = document.getElementById('btnPengaturan');
+            const kolomAksiHeader = document.getElementById('kolomAksiHeader');
+
+            if (isRayna) {
+                badge.innerText = '👑 Akun: Rayna (Admin)';
+                badge.className = 'text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-full font-semibold shadow-sm';
+                inputMargin.disabled = false;
+                labelKunci.classList.add('hidden');
+                btnPengaturan.classList.remove('hidden');
+                kolomAksiHeader.classList.remove('hidden');
+            } else {
+                badge.innerText = '🏪 Akun: Toko';
+                badge.className = 'text-xs bg-indigo-800 text-white px-3 py-1.5 rounded-full font-semibold shadow-sm';
+                inputMargin.disabled = true;
+                labelKunci.classList.remove('hidden');
+                btnPengaturan.classList.add('hidden');
+                kolomAksiHeader.classList.add('hidden');
+            }
+            renderTabel();
+        }
+
+        // --- Perhitungan & Form ---
         function formatRupiah(angka) {
             return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+        }
+
+        function ubahMarginDefault() {
+            if (akunAktif === 'rayna') {
+                const val = document.getElementById('persenMargin').value;
+                if (val !== '') {
+                    defaultMargin = val;
+                    localStorage.setItem('default_margin_toko', defaultMargin);
+                }
+            }
+            hitungOtomatis();
         }
 
         function hitungOtomatis() {
@@ -236,6 +366,7 @@
 
             document.getElementById('salesForm').reset();
             document.getElementById('tanggal').valueAsDate = new Date();
+            document.getElementById('persenMargin').value = defaultMargin;
             hitungOtomatis();
         }
 
@@ -261,6 +392,11 @@
         }
 
         function toggleStatusModal(index) {
+            if (akunAktif !== 'rayna') {
+                alert('Hanya Rayna (Admin) yang dapat mengubah status modal!');
+                renderTabel();
+                return;
+            }
             dataPenjualan[index].modalSudahDiputar = !dataPenjualan[index].modalSudahDiputar;
             localStorage.setItem('data_penjualan_toko', JSON.stringify(dataPenjualan));
             renderTabel();
@@ -271,6 +407,7 @@
             const tbody = document.getElementById('tabelData');
             tbody.innerHTML = '';
 
+            const isRayna = akunAktif === 'rayna';
             let totalS = 0, totalM = 0, totalMod = 0, totalSim = 0;
             let totalModSudah = 0, totalModBelum = 0;
 
@@ -297,8 +434,8 @@
                     <td class="p-3 text-blue-600 font-medium whitespace-nowrap">${formatRupiah(item.margin)}</td>
                     <td class="p-3 whitespace-nowrap">${formatRupiah(item.modalDiputar)}</td>
                     <td class="p-3 text-center whitespace-nowrap">
-                        <label class="inline-flex items-center gap-1.5 cursor-pointer select-none">
-                            <input type="checkbox" ${item.modalSudahDiputar ? 'checked' : ''} onchange="toggleStatusModal(${index})" class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer">
+                        <label class="inline-flex items-center gap-1.5 ${isRayna ? 'cursor-pointer' : 'cursor-not-allowed opacity-75'} select-none">
+                            <input type="checkbox" ${item.modalSudahDiputar ? 'checked' : ''} ${isRayna ? '' : 'disabled'} onchange="toggleStatusModal(${index})" class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500">
                             <span class="text-xs font-medium ${item.modalSudahDiputar ? 'text-emerald-600' : 'text-slate-400'}">
                                 ${item.modalSudahDiputar ? 'Sudah Diputar' : 'Belum'}
                             </span>
@@ -307,15 +444,16 @@
                     <td class="p-3 text-emerald-600 font-medium whitespace-nowrap">${formatRupiah(item.marginDisimpan)}</td>
                     <td class="p-3 text-rose-600 whitespace-nowrap">${formatRupiah(item.pengeluaran)}</td>
                     <td class="p-3 text-slate-500">${item.catatan || '-'}</td>
+                    ${isRayna ? `
                     <td class="p-3 text-center">
                         <button onclick="hapusData(${index})" class="text-rose-500 hover:text-rose-700 font-bold px-2 py-1 text-xs bg-rose-50 rounded">Hapus</button>
-                    </td>
+                    </td>` : ''}
                 `;
                 tbody.appendChild(tr);
             });
 
             if (tbody.innerHTML === '') {
-                tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-400">Belum ada data penjualan.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="${isRayna ? 9 : 8}" class="p-4 text-center text-slate-400">Belum ada data penjualan.</td></tr>`;
             }
 
             document.getElementById('totalSales').innerText = formatRupiah(totalS);
@@ -327,6 +465,7 @@
         }
 
         function hapusData(index) {
+            if (akunAktif !== 'rayna') return;
             if (confirm('Yakin ingin menghapus data ini?')) {
                 dataPenjualan.splice(index, 1);
                 localStorage.setItem('data_penjualan_toko', JSON.stringify(dataPenjualan));
@@ -369,6 +508,8 @@
         }
 
         function bukaPengaturan() {
+            if (akunAktif !== 'rayna') return;
+            document.getElementById('inputPinBaru').value = '';
             document.getElementById('modalPengaturan').classList.remove('hidden');
             document.getElementById('modalPengaturan').classList.add('flex');
         }
@@ -381,12 +522,20 @@
         function simpanPengaturan() {
             scriptUrl = document.getElementById('inputScriptUrl').value.trim();
             localStorage.setItem('script_url_toko', scriptUrl);
+
+            const pinBaru = document.getElementById('inputPinBaru').value.trim();
+            if (pinBaru) {
+                pinRayna = pinBaru;
+                localStorage.setItem('pin_rayna_toko', pinRayna);
+            }
+
             tutupPengaturan();
             if (scriptUrl) {
                 updateStatusKoneksi(true);
-                alert('URL Spreadsheet berhasil disimpan!');
+                alert('Pengaturan berhasil disimpan!');
             } else {
                 updateStatusKoneksi(false);
+                alert('Pengaturan PIN/URL diperbarui!');
             }
         }
 
@@ -397,14 +546,14 @@
                 statusEl.innerText = "Terhubung ke Google Sheets";
             } else {
                 statusEl.className = "text-xs bg-amber-500 text-white px-3 py-1.5 rounded-full font-medium shadow-sm";
-                statusEl.innerText = "Mode Lokal (Belum Terhubung)";
+                statusEl.innerText = "Mode Lokal";
             }
         }
 
         function muatDariSpreadsheet() {
             if (!scriptUrl) {
-                alert('Silakan masukkan URL Pengaturan Spreadsheet terlebih dahulu.');
-                bukaPengaturan();
+                alert('URL Spreadsheet belum diatur. Silakan hubungi Rayna (Admin) untuk mengatur URL.');
+                if (akunAktif === 'rayna') bukaPengaturan();
                 return;
             }
 
