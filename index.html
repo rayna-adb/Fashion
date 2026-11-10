@@ -337,7 +337,7 @@
             renderCatatan();
         }
 
-        // --- Fitur Catatan Toko Mandiri (List + Tombol Hapus di Samping) ---
+        // --- Fitur Catatan Toko Mandiri (List + Ceklis + Tombol Hapus di Samping) ---
         function tambahCatatan(e) {
             e.preventDefault();
             const teks = document.getElementById('inputCatatanMandiri').value.trim();
@@ -351,11 +351,18 @@
             catatanToko.unshift({
                 waktu,
                 teks,
-                pembuat: akunAktif === 'rayna' ? 'Rayna' : 'Toko'
+                pembuat: akunAktif === 'rayna' ? 'Rayna' : 'Toko',
+                selesai: false
             });
 
             localStorage.setItem('catatan_toko_rayna', JSON.stringify(catatanToko));
             document.getElementById('inputCatatanMandiri').value = '';
+            renderCatatan();
+        }
+
+        function toggleCatatan(index) {
+            catatanToko[index].selesai = !catatanToko[index].selesai;
+            localStorage.setItem('catatan_toko_rayna', JSON.stringify(catatanToko));
             renderCatatan();
         }
 
@@ -388,12 +395,15 @@
                             <span>•</span>
                             <span>${item.waktu}</span>
                         </div>
-                        <p class="text-sm text-slate-700 break-words">${item.teks}</p>
+                        <p class="text-sm break-words ${item.selesai ? 'line-through text-slate-400' : 'text-slate-700'}">${item.teks}</p>
                     </div>
-                    ${isRayna ? `
-                    <button onclick="hapusCatatan(${index})" title="Hapus catatan" class="shrink-0 text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-lg transition text-sm">
-                        🗑️
-                    </button>` : ''}
+                    <div class="flex items-center gap-2 shrink-0">
+                        <input type="checkbox" ${item.selesai ? 'checked' : ''} onchange="toggleCatatan(${index})" title="Tandai selesai" class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer">
+                        ${isRayna ? `
+                        <button onclick="hapusCatatan(${index})" title="Hapus catatan" class="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1 rounded-lg transition text-sm">
+                            🗑️
+                        </button>` : ''}
+                    </div>
                 `;
                 container.appendChild(li);
             });
