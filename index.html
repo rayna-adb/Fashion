@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Laporan Penjualan Toko Pakaian</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between font-sans">
+
+    <!-- Header / Navbar -->
+    <header class="bg-indigo-600 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <h1 class="text-xl font-bold tracking-wide flex items-center gap-2">
+                👕 Laporan Penjualan Toko Pakaian
+            </h1>
+            <div class="flex items-center gap-2 flex-wrap justify-center">
+                <!-- Status Koneksi Spreadsheet -->
+                <span id="syncStatus" class="text-xs bg-amber-500 text-white px-3 py-1.5 rounded-full font-medium shadow-sm">
+                    Mode Lokal (Belum Terhubung)
+                </span>
+                <button onclick="bukaPengaturan()" class="bg-indigo-700 hover:bg-indigo-800 text-white text-sm px-3 py-1.5 rounded-lg transition shadow-sm font-medium">
+                    ⚙️ Pengaturan Spreadsheet
+                </button>
+                <button onclick="muatDariSpreadsheet()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-3 py-1.5 rounded-lg transition shadow-sm font-medium">
+                    🔄 Muat dari Spreadsheet
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Kolom Kiri: Form Input -->
+        <div class="lg:col-span-1 space-y-6">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="text-lg font-semibold text-slate-700 mb-4 pb-2 border-b border-slate-100">Tambah Data Penjualan</h2>
+                <form id="salesForm" onsubmit="tambahData(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">Tanggal</label>
+                        <input type="date" id="tanggal" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">Sales Harian (Rp)</label>
+                        <input type="number" id="sales" required placeholder="Contoh: 1500000" oninput="hitungOtomatis()" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">Persentase Margin (%)</label>
+                        <input type="number" step="0.1" id="persenMargin" required placeholder="Contoh: 25" oninput="hitungOtomatis()" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <div>
+                            <span class="block text-xs font-semibold text-slate-500">Margin (Rp)</span>
+                            <span id="previewMargin" class="text-sm font-bold text-indigo-600">Rp 0</span>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-semibold text-slate-500">Modal Diputar</span>
+                            <span id="previewModal" class="text-sm font-bold text-slate-700">Rp 0</span>
+                        </div>
+                        <div class="col-span-2 pt-1 border-t border-slate-200">
+                            <span class="block text-xs font-semibold text-slate-500">Margin Disimpan</span>
+                            <span id="previewSimpan" class="text-sm font-bold text-emerald-600">Rp 0</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">Pengeluaran Lain (Rp)</label>
+                        <input type="number" id="pengeluaran" value="0" placeholder="Contoh: 50000" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">Catatan</label>
+                        <input type="text" id="catatan" placeholder="Opsional (misal: Toko ramai)" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg transition shadow-sm text-sm">
+                        Simpan Data
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Kolom Kanan: Tabel Data & Ringkasan Total -->
+        <div class="lg:col-span-2 space-y-6">
+
+            <!-- Card Ringkasan Total -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+                    <h2 class="text-lg font-semibold text-slate-700">Ringkasan Total</h2>
+                    <button onclick="salinLaporanChat()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded-lg transition flex items-center gap-1 font-medium shadow-sm">
+                        📋 Salin Laporan Chat
+                    </button>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-100">
+                        <span class="block text-xs font-medium text-indigo-600">Total Sales</span>
+                        <span id="totalSales" class="text-base sm:text-lg font-bold text-indigo-900">Rp 0</span>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                        <span class="block text-xs font-medium text-blue-600">Total Margin</span>
+                        <span id="totalMargin" class="text-base sm:text-lg font-bold text-blue-900">Rp 0</span>
+                    </div>
+                    <div class="bg-amber-50 p-3 rounded-lg border border-amber-100">
+                        <span class="block text-xs font-medium text-amber-600">Total Modal Diputar</span>
+                        <span id="totalModal" class="text-base sm:text-lg font-bold text-amber-900">Rp 0</span>
+                        <div class="mt-1 pt-1 border-t border-amber-200/70 text-[11px] space-y-0.5">
+                            <div class="flex justify-between text-emerald-700 font-medium">
+                                <span>Sudah:</span>
+                                <span id="totalModalSudah">Rp 0</span>
+                            </div>
+                            <div class="flex justify-between text-rose-600 font-medium">
+                                <span>Belum:</span>
+                                <span id="totalModalBelum">Rp 0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-100">
+                        <span class="block text-xs font-medium text-emerald-600">Total Margin Disimpan</span>
+                        <span id="totalSimpan" class="text-base sm:text-lg font-bold text-emerald-900">Rp 0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Tabel Data -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-3 mb-4 pb-2 border-b border-slate-100">
+                    <h2 class="text-lg font-semibold text-slate-700">Riwayat Penjualan</h2>
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <input type="text" id="pencarian" placeholder="Cari tanggal / catatan..." onkeyup="renderTabel()" class="px-3 py-1.5 border border-slate-300 rounded-lg text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 uppercase text-xs tracking-wider">
+                                <th class="p-3">Tanggal</th>
+                                <th class="p-3">Sales</th>
+                                <th class="p-3">Margin</th>
+                                <th class="p-3">Modal Putar</th>
+                                <th class="p-3 text-center">Status Modal</th>
+                                <th class="p-3">Simpan</th>
+                                <th class="p-3">Pengeluaran</th>
+                                <th class="p-3">Catatan</th>
+                                <th class="p-3 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelData" class="divide-y divide-slate-100 text-slate-700">
+                            <!-- Data akan diisi lewat JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Modal Pengaturan Spreadsheet -->
+    <div id="modalPengaturan" class="fixed inset-0 bg-black bg-opacity-50 hidden justify-center items-center p-4 z-50">
+        <div class="bg-white rounded-xl max-w-md w-full p-6 space-y-4 shadow-xl">
+            <h3 class="text-lg font-bold text-slate-800">Pengaturan Google Spreadsheet</h3>
+            <p class="text-xs text-slate-500">Masukkan URL Web App Google Apps Script Anda agar data tersinkron otomatis ke Spreadsheet.</p>
+            <div>
+                <label class="block text-sm font-medium text-slate-600 mb-1">URL Web App (Apps Script)</label>
+                <input type="text" id="inputScriptUrl" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="tutupPengaturan()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-medium transition">Batal</button>
+                <button onclick="simpanPengaturan()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition">Simpan URL</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 mt-6">
+        Aplikasi Manajemen Penjualan Toko Pakaian &copy; 2026
+    </footer>
+
+    <!-- JavaScript Aplikasi -->
+    <script>
+        let dataPenjualan = JSON.parse(localStorage.getItem('data_penjualan_toko')) || [];
+        let scriptUrl = localStorage.getItem('script_url_toko') || '';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('tanggal').valueAsDate = new Date();
+            if (scriptUrl) {
+                document.getElementById('inputScriptUrl').value = scriptUrl;
+                updateStatusKoneksi(true);
+            }
+            renderTabel();
+        });
+
+        function formatRupiah(angka) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+        }
+
+        function hitungOtomatis() {
+            const sales = parseFloat(document.getElementById('sales').value) || 0;
+            const persen = parseFloat(document.getElementById('persenMargin').value) || 0;
+            
+            const margin = sales * (persen / 100);
+            const modalDiputar = sales - margin;
+            const marginDisimpan = margin;
+
+            document.getElementById('previewMargin').innerText = formatRupiah(margin);
+            document.getElementById('previewModal').innerText = formatRupiah(modalDiputar);
+            document.getElementById('previewSimpan').innerText = formatRupiah(marginDisimpan);
+        }
+
+        function tambahData(e) {
+            e.preventDefault();
+            const tanggal = document.getElementById('tanggal').value;
+            const sales = parseFloat(document.getElementById('sales').value) || 0;
+            const persenMargin = parseFloat(document.getElementById('persenMargin').value) || 0;
+            const pengeluaran = parseFloat(document.getElementById('pengeluaran').value) || 0;
+            const catatan = document.getElementById('catatan').value;
+
+            const margin = sales * (persenMargin / 100);
+            const modalDiputar = sales - margin;
+            const marginDisimpan = margin;
+
+            const itemBaru = { 
+                tanggal, 
+                sales, 
+                persenMargin, 
+                margin, 
+                pengeluaran, 
+                modalDiputar, 
+                marginDisimpan, 
+                catatan,
+                modalSudahDiputar: false
+            };
+            
+            dataPenjualan.push(itemBaru);
+            simpanDanSinkron(itemBaru);
+
+            document.getElementById('salesForm').reset();
+            document.getElementById('tanggal').valueAsDate = new Date();
+            hitungOtomatis();
+        }
+
+        function simpanDanSinkron(itemBaru) {
+            localStorage.setItem('data_penjualan_toko', JSON.stringify(dataPenjualan));
+            renderTabel();
+
+            if (scriptUrl) {
+                fetch(scriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(itemBaru)
+                }).then(() => {
+                    alert('Data berhasil disimpan dan dikirim ke Spreadsheet!');
+                }).catch(err => {
+                    console.error(err);
+                    alert('Data tersimpan lokal, namun gagal terkirim otomatis ke Spreadsheet.');
+                });
+            } else {
+                alert('Data berhasil disimpan secara lokal!');
+            }
+        }
+
+        function toggleStatusModal(index) {
+            dataPenjualan[index].modalSudahDiputar = !dataPenjualan[index].modalSudahDiputar;
+            localStorage.setItem('data_penjualan_toko', JSON.stringify(dataPenjualan));
+            renderTabel();
+        }
+
+        function renderTabel() {
+            const keyword = document.getElementById('pencarian').value.toLowerCase();
+            const tbody = document.getElementById('tabelData');
+            tbody.innerHTML = '';
+
+            let totalS = 0, totalM = 0, totalMod = 0, totalSim = 0;
+            let totalModSudah = 0, totalModBelum = 0;
+
+            dataPenjualan.forEach((item, index) => {
+                const match = item.tanggal.toLowerCase().includes(keyword) || (item.catatan && item.catatan.toLowerCase().includes(keyword));
+                if (!match) return;
+
+                totalS += item.sales;
+                totalM += item.margin;
+                totalMod += item.modalDiputar;
+                totalSim += item.marginDisimpan;
+
+                if (item.modalSudahDiputar) {
+                    totalModSudah += item.modalDiputar;
+                } else {
+                    totalModBelum += item.modalDiputar;
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
+                tr.innerHTML = `
+                    <td class="p-3 font-medium whitespace-nowrap">${item.tanggal}</td>
+                    <td class="p-3 whitespace-nowrap">${formatRupiah(item.sales)}</td>
+                    <td class="p-3 text-blue-600 font-medium whitespace-nowrap">${formatRupiah(item.margin)}</td>
+                    <td class="p-3 whitespace-nowrap">${formatRupiah(item.modalDiputar)}</td>
+                    <td class="p-3 text-center whitespace-nowrap">
+                        <label class="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                            <input type="checkbox" ${item.modalSudahDiputar ? 'checked' : ''} onchange="toggleStatusModal(${index})" class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer">
+                            <span class="text-xs font-medium ${item.modalSudahDiputar ? 'text-emerald-600' : 'text-slate-400'}">
+                                ${item.modalSudahDiputar ? 'Sudah Diputar' : 'Belum'}
+                            </span>
+                        </label>
+                    </td>
+                    <td class="p-3 text-emerald-600 font-medium whitespace-nowrap">${formatRupiah(item.marginDisimpan)}</td>
+                    <td class="p-3 text-rose-600 whitespace-nowrap">${formatRupiah(item.pengeluaran)}</td>
+                    <td class="p-3 text-slate-500">${item.catatan || '-'}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="hapusData(${index})" class="text-rose-500 hover:text-rose-700 font-bold px-2 py-1 text-xs bg-rose-50 rounded">Hapus</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            if (tbody.innerHTML === '') {
+                tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-400">Belum ada data penjualan.</td></tr>`;
+            }
+
+            document.getElementById('totalSales').innerText = formatRupiah(totalS);
+            document.getElementById('totalMargin').innerText = formatRupiah(totalM);
+            document.getElementById('totalModal').innerText = formatRupiah(totalMod);
+            document.getElementById('totalModalSudah').innerText = formatRupiah(totalModSudah);
+            document.getElementById('totalModalBelum').innerText = formatRupiah(totalModBelum);
+            document.getElementById('totalSimpan').innerText = formatRupiah(totalSim);
+        }
+
+        function hapusData(index) {
+            if (confirm('Yakin ingin menghapus data ini?')) {
+                dataPenjualan.splice(index, 1);
+                localStorage.setItem('data_penjualan_toko', JSON.stringify(dataPenjualan));
+                renderTabel();
+            }
+        }
+
+        function salinLaporanChat() {
+            let totalS = 0, totalM = 0, totalMod = 0, totalSim = 0;
+            let totalModSudah = 0, totalModBelum = 0;
+
+            dataPenjualan.forEach(item => {
+                totalS += item.sales;
+                totalM += item.margin;
+                totalMod += item.modalDiputar;
+                totalSim += item.marginDisimpan;
+                if (item.modalSudahDiputar) {
+                    totalModSudah += item.modalDiputar;
+                } else {
+                    totalModBelum += item.modalDiputar;
+                }
+            });
+
+            let teks = `📊 *LAPORAN PENJUALAN TOKO PAKAIAN*\n`;
+            teks += `----------------------------------------\n`;
+            teks += `📅 Total Hari Tercatat: ${dataPenjualan.length} Hari\n\n`;
+            teks += `💰 *TOTAL KESELURUHAN:*\n`;
+            teks += `• Total Sales: ${formatRupiah(totalS)}\n`;
+            teks += `• Total Margin: ${formatRupiah(totalM)}\n`;
+            teks += `• Modal Harus Diputar: ${formatRupiah(totalMod)}\n`;
+            teks += `  - Sudah Diputar: ${formatRupiah(totalModSudah)}\n`;
+            teks += `  - Belum Diputar: ${formatRupiah(totalModBelum)}\n`;
+            teks += `• Margin Harus Disimpan: ${formatRupiah(totalSim)}\n`;
+            teks += `----------------------------------------\n`;
+            teks += `_Dibuat otomatis via Aplikasi Toko Pakaian_`;
+
+            navigator.clipboard.writeText(teks).then(() => {
+                alert('Laporan ringkas berhasil disalin! Silakan tempel (Paste) di WhatsApp/Chat.');
+            });
+        }
+
+        function bukaPengaturan() {
+            document.getElementById('modalPengaturan').classList.remove('hidden');
+            document.getElementById('modalPengaturan').classList.add('flex');
+        }
+
+        function tutupPengaturan() {
+            document.getElementById('modalPengaturan').classList.remove('flex');
+            document.getElementById('modalPengaturan').classList.add('hidden');
+        }
+
+        function simpanPengaturan() {
+            scriptUrl = document.getElementById('inputScriptUrl').value.trim();
+            localStorage.setItem('script_url_toko', scriptUrl);
+            tutupPengaturan();
+            if (scriptUrl) {
+                updateStatusKoneksi(true);
+                alert('URL Spreadsheet berhasil disimpan!');
+            } else {
+                updateStatusKoneksi(false);
+            }
+        }
+
+        function updateStatusKoneksi(terhubung) {
+            const statusEl = document.getElementById('syncStatus');
+            if (terhubung) {
+                statusEl.className = "text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-full font-medium shadow-sm";
+                statusEl.innerText = "Terhubung ke Google Sheets";
+            } else {
+                statusEl.className = "text-xs bg-amber-500 text-white px-3 py-1.5 rounded-full font-medium shadow-sm";
+                statusEl.innerText = "Mode Lokal (Belum Terhubung)";
+            }
+        }
+
+        function muatDariSpreadsheet() {
+            if (!scriptUrl) {
+                alert('Silakan masukkan URL Pengaturan Spreadsheet terlebih dahulu.');
+                bukaPengaturan();
+                return;
+            }
+
+            alert('Memuat data dari Google Spreadsheet...');
+            fetch(scriptUrl)
+                .then(res => res.json())
+                .then(res => {
+                    if (res.status === 'success' && Array.isArray(res.data)) {
+                        dataPenjualan = res.data.map(item => ({
+                            ...item,
+                            modalSudahDiputar: Boolean(item.modalSudahDiputar)
+                        }));
+                        localStorage.setItem('data_penjualan_toko', JSON.stringify(dataPenjualan));
+                        renderTabel();
+                        alert('Data berhasil dimuat dari Spreadsheet!');
+                    } else {
+                        alert('Gagal memuat data atau format data kosong.');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Terjadi kesalahan saat mengambil data dari Spreadsheet. Pastikan URL sudah benar dan dideploy sebagai "Anyone".');
+                });
+        }
+    </script>
+</body>
+</html>
