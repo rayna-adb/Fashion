@@ -78,8 +78,9 @@
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        <!-- Kolom Kiri: Form Input -->
+        <!-- Kolom Kiri: Form Input Sales & Catatan Toko -->
         <div class="lg:col-span-1 space-y-6">
+            <!-- Card Form Input Sales -->
             <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
                 <h2 class="text-lg font-semibold text-slate-700 mb-4 pb-2 border-b border-slate-100">Tambah Data Penjualan</h2>
                 <form id="salesForm" onsubmit="tambahData(event)" class="space-y-4">
@@ -120,14 +121,26 @@
                         <label class="block text-sm font-medium text-slate-600 mb-1">Barang Perlu Order / Stok Menipis</label>
                         <input type="text" id="barangOrder" placeholder="Contoh: Kaos Polos Hitam M, Celana Chino" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-600 mb-1">Catatan</label>
-                        <input type="text" id="catatan" placeholder="Opsional (misal: Toko ramai)" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
-                    </div>
                     <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg transition shadow-sm text-sm">
-                        Simpan Data
+                        Simpan Data Sales
                     </button>
                 </form>
+            </div>
+
+            <!-- Card Catatan Toko Mandiri -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="text-lg font-semibold text-slate-700 mb-3 pb-2 border-b border-slate-100 flex items-center gap-2">
+                    📝 Catatan Toko
+                </h2>
+                <form onsubmit="tambahCatatan(event)" class="space-y-3 mb-4">
+                    <textarea id="inputCatatanMandiri" rows="2" required placeholder="Tulis catatan kapan saja (misal: Toko ramai, pelanggan pesan gamis L, dll)..." class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"></textarea>
+                    <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-medium py-2 rounded-lg transition shadow-sm text-xs">
+                        + Tambah Catatan
+                    </button>
+                </form>
+                <ul id="daftarCatatan" class="divide-y divide-slate-200 max-h-64 overflow-y-auto border border-slate-100 rounded-lg bg-slate-50/50">
+                    <!-- List catatan diisi lewat JavaScript -->
+                </ul>
             </div>
         </div>
 
@@ -177,7 +190,7 @@
                 <div class="flex flex-col sm:flex-row justify-between items-center gap-3 mb-4 pb-2 border-b border-slate-100">
                     <h2 class="text-lg font-semibold text-slate-700">Riwayat Penjualan</h2>
                     <div class="flex items-center gap-2 w-full sm:w-auto">
-                        <input type="text" id="pencarian" placeholder="Cari tanggal / barang / catatan..." onkeyup="renderTabel()" class="px-3 py-1.5 border border-slate-300 rounded-lg text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <input type="text" id="pencarian" placeholder="Cari tanggal / barang..." onkeyup="renderTabel()" class="px-3 py-1.5 border border-slate-300 rounded-lg text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         <button id="btnHapusSemua" onclick="hapusSemuaData()" class="hidden bg-rose-600 hover:bg-rose-700 text-white text-xs px-3 py-2 rounded-lg transition font-medium whitespace-nowrap shadow-sm">
                             🗑️ Hapus Semua
                         </button>
@@ -196,7 +209,6 @@
                                 <th class="p-3">Simpan</th>
                                 <th class="p-3">Pengeluaran</th>
                                 <th class="p-3">Stok Menipis / Order</th>
-                                <th class="p-3">Catatan</th>
                                 <th id="kolomAksiHeader" class="p-3 text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -239,6 +251,7 @@
     <!-- JavaScript Aplikasi -->
     <script>
         let dataPenjualan = JSON.parse(localStorage.getItem('data_penjualan_toko')) || [];
+        let catatanToko = JSON.parse(localStorage.getItem('catatan_toko_rayna')) || [];
         let scriptUrl = localStorage.getItem('script_url_toko') || '';
         let pinRayna = localStorage.getItem('pin_rayna_toko') || '2626';
         let defaultMargin = localStorage.getItem('default_margin_toko') || '25';
@@ -252,6 +265,7 @@
                 updateStatusKoneksi(true);
             }
             renderTabel();
+            renderCatatan();
         });
 
         // --- Sistem Pilihan Akun ---
@@ -320,9 +334,72 @@
                 kolomAksiHeader.classList.add('hidden');
             }
             renderTabel();
+            renderCatatan();
         }
 
-        // --- Perhitungan & Form ---
+        // --- Fitur Catatan Toko Mandiri (List + Tombol Hapus di Samping) ---
+        function tambahCatatan(e) {
+            e.preventDefault();
+            const teks = document.getElementById('inputCatatanMandiri').value.trim();
+            if (!teks) return;
+
+            const waktu = new Date().toLocaleString('id-ID', {
+                day: '2-digit', month: 'short', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+
+            catatanToko.unshift({
+                waktu,
+                teks,
+                pembuat: akunAktif === 'rayna' ? 'Rayna' : 'Toko'
+            });
+
+            localStorage.setItem('catatan_toko_rayna', JSON.stringify(catatanToko));
+            document.getElementById('inputCatatanMandiri').value = '';
+            renderCatatan();
+        }
+
+        function hapusCatatan(index) {
+            if (akunAktif !== 'rayna') return;
+            if (confirm('Hapus catatan ini?')) {
+                catatanToko.splice(index, 1);
+                localStorage.setItem('catatan_toko_rayna', JSON.stringify(catatanToko));
+                renderCatatan();
+            }
+        }
+
+        function renderCatatan() {
+            const container = document.getElementById('daftarCatatan');
+            container.innerHTML = '';
+
+            if (catatanToko.length === 0) {
+                container.innerHTML = '<li class="p-4 text-xs text-slate-400 text-center">Belum ada catatan toko.</li>';
+                return;
+            }
+
+            const isRayna = akunAktif === 'rayna';
+            catatanToko.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.className = 'p-3 flex items-center justify-between gap-3 hover:bg-white transition';
+                li.innerHTML = `
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2 text-[11px] text-slate-400 mb-0.5">
+                            <span class="font-semibold text-indigo-600">${item.pembuat}</span>
+                            <span>•</span>
+                            <span>${item.waktu}</span>
+                        </div>
+                        <p class="text-sm text-slate-700 break-words">${item.teks}</p>
+                    </div>
+                    ${isRayna ? `
+                    <button onclick="hapusCatatan(${index})" title="Hapus catatan" class="shrink-0 text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-lg transition text-sm">
+                        🗑️
+                    </button>` : ''}
+                `;
+                container.appendChild(li);
+            });
+        }
+
+        // --- Perhitungan & Form Sales ---
         function formatRupiah(angka) {
             return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
         }
@@ -358,7 +435,6 @@
             const persenMargin = parseFloat(document.getElementById('persenMargin').value) || 0;
             const pengeluaran = parseFloat(document.getElementById('pengeluaran').value) || 0;
             const barangOrder = document.getElementById('barangOrder').value.trim();
-            const catatan = document.getElementById('catatan').value;
 
             const margin = sales * (persenMargin / 100);
             const modalDiputar = sales - margin;
@@ -373,7 +449,7 @@
                 modalDiputar, 
                 marginDisimpan, 
                 barangOrder,
-                catatan,
+                catatan: '',
                 modalSudahDiputar: false
             };
             
@@ -429,7 +505,6 @@
 
             dataPenjualan.forEach((item, index) => {
                 const match = item.tanggal.toLowerCase().includes(keyword) || 
-                              (item.catatan && item.catatan.toLowerCase().includes(keyword)) ||
                               (item.barangOrder && item.barangOrder.toLowerCase().includes(keyword));
                 if (!match) return;
 
@@ -464,7 +539,6 @@
                     <td class="p-3">
                         ${item.barangOrder ? `<span class="inline-block bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded font-medium">${item.barangOrder}</span>` : '<span class="text-slate-400">-</span>'}
                     </td>
-                    <td class="p-3 text-slate-500">${item.catatan || '-'}</td>
                     ${isRayna ? `
                     <td class="p-3 text-center">
                         <button onclick="hapusData(${index})" class="text-rose-500 hover:text-rose-700 font-bold px-2 py-1 text-xs bg-rose-50 rounded">Hapus</button>
@@ -474,7 +548,7 @@
             });
 
             if (tbody.innerHTML === '') {
-                tbody.innerHTML = `<tr><td colspan="${isRayna ? 10 : 9}" class="p-4 text-center text-slate-400">Belum ada data penjualan.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="${isRayna ? 9 : 8}" class="p-4 text-center text-slate-400">Belum ada data penjualan.</td></tr>`;
             }
 
             document.getElementById('totalSales').innerText = formatRupiah(totalS);
@@ -542,6 +616,12 @@
             if (daftarOrder.length > 0) {
                 teks += `\n📦 *BARANG PERLU ORDER / STOK MENIPIS:*\n`;
                 teks += daftarOrder.join('\n') + '\n';
+            }
+            if (catatanToko.length > 0) {
+                teks += `\n📝 *CATATAN TOKO:*\n`;
+                catatanToko.slice(0, 5).forEach(c => {
+                    teks += `• [${c.waktu}] ${c.teks}\n`;
+                });
             }
             teks += `----------------------------------------\n`;
             teks += `_Dibuat otomatis via Aplikasi Rayna Fashion_`;
